@@ -214,8 +214,8 @@ class Convolution:
     def forward(self, x):
         FN, C, FH, FW = self.W.shape
         N, C, H, W = x.shape
-        out_h = 1 + int((H + 2*self.pad - FH) / self.stride)
-        out_w = 1 + int((W + 2*self.pad - FW) / self.stride)
+        out_h = (H + 2*self.pad - FH) // self.stride + 1
+        out_w = (W + 2*self.pad - FW) // self.stride + 1
 
         col = im2col(x, FH, FW, self.stride, self.pad)
         col_W = self.W.reshape(FN, -1).T
@@ -255,8 +255,8 @@ class Pooling:
 
     def forward(self, x):
         N, C, H, W = x.shape
-        out_h = int(1 + (H - self.pool_h) / self.stride)
-        out_w = int(1 + (W - self.pool_w) / self.stride)
+        out_h = (H - self.pool_h) // self.stride + 1
+        out_w = (W - self.pool_w) // self.stride + 1
 
         col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
         col = col.reshape(-1, self.pool_h*self.pool_w)
