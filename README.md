@@ -10,10 +10,11 @@ Python tutorial and deep learning fundamental
 ## Chapter07. Classes and OOP
 ## Chapter08. Numpy and matplotlib
 ## Chapter09. Perceptron and neural networks
-## Chapter10. Loss funtion and back propagation
-## Chapter11. Regularization
-## Chapter12. Convolutional neural networks
-## Chapter13. Residual networks
-## Chapter14. Semantic segmentation
-## Chapter15. Object detection
-## Chapter16. Face recognition
+## Chapter10. Neural network learning
+## Chapter11. Back propagation algorithm
+## Chapter12. Optimization and regularization
+## Chapter13. Convolutional neural networks
+## Chapter14. Deep convolutional models
+## Chapter15. Semantic segmentation
+## Chapter16. Object detection
+## Chapter17. Face recognition
