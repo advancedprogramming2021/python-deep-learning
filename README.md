@@ -5,7 +5,7 @@ Python tutorial and deep learning fundamental
 ## Chapter02. Basic grammar and variables
 ## Chapter03. Lists and dictionaries
 ## Chapter04. Tuples and files
-## Chapter05. Tests and loops
+## Chapter05. Assignments, tests and loops
 ## Chapter06. Functions and modules
 ## Chapter07. Classes and OOP
 ## Chapter08. Numpy and matplotlib
