@@ -1,9 +1,12 @@
 import os, sys, time
 import six
 import hashlib
+import tarfile
+import shutil
 from six.moves.urllib.error import HTTPError
 from six.moves.urllib.error import URLError
 from six.moves.urllib.request import urlretrieve
+from six.moves import cPickle
 import numpy as np
 
 class Progbar(object):
@@ -182,8 +185,54 @@ def _hash_file(fpath, algorithm='sha256', chunk_size=65535):
 
     return hasher.hexdigest()
 
+def _extract_archive(file_path, path='.', archive_format='auto'):
+    """Extracts an archive if it matches tar, tar.gz, tar.bz, or zip formats.
+
+    Arguments:
+        file_path: path to the archive file
+        path: path to extract the archive file
+        archive_format: Archive format to try for extracting the file.
+            Options are 'auto', 'tar', 'zip', and None.
+            'tar' includes tar, tar.gz, and tar.bz files.
+            The default 'auto' is ['tar', 'zip'].
+            None or an empty list will return no matches found.
+
+    Returns:
+        True if a match was found and an archive extraction was completed,
+        False otherwise.
+    """
+    if archive_format is None:
+        return False
+    if archive_format == 'auto':
+        archive_format = ['tar', 'zip']
+    if isinstance(archive_format, six.string_types):
+        archive_format = [archive_format]
+
+    for archive_type in archive_format:
+        if archive_type == 'tar':
+            open_fn = tarfile.open
+            is_match_fn = tarfile.is_tarfile
+        if archive_type == 'zip':
+            open_fn = zipfile.ZipFile
+            is_match_fn = zipfile.is_zipfile
+
+        if is_match_fn(file_path):
+            with open_fn(file_path) as archive:
+                try:
+                    archive.extractall(path)
+                except (tarfile.TarError, RuntimeError, KeyboardInterrupt):
+                    if os.path.exists(path):
+                        if os.path.isfile(path):
+                            os.remove(path)
+                        else:
+                            shutil.rmtree(path)
+                    raise
+            return True
+    return False
+
 def get_file(fname,
              origin,
+             untar=False,
              md5_hash=None,
              file_hash=None,
              cache_subdir='datasets',
@@ -202,6 +251,12 @@ def get_file(fname,
     os.makedirs(datadir, exist_ok=True)
 
     fpath = os.path.join(datadir, fname)
+
+    if untar:
+        untar_fpath = os.path.join(datadir, fname)
+        fpath = untar_fpath + '.tar.gz'
+    else:
+        fpath = os.path.join(datadir, fname)
 
     download = False
     if os.path.exists(fpath):
@@ -244,6 +299,12 @@ def get_file(fname,
             if os.path.exists(fpath):
                 os.remove(fpath)
             raise
+        ProgressTracker.progbar = None
+
+    if untar:
+        if not os.path.exists(untar_fpath):
+            _extract_archive(fpath, datadir, archive_format='tar')
+        return untar_fpath
 
     return fpath
 
@@ -257,4 +318,62 @@ def load_mnist(path='mnist.npz'):
     print('Dataset loading completed')
 
     return (x_train, y_train), (x_test, y_test)
-    
+
+def load_batch(fpath, label_key='labels'):
+    """Internal utility for parsing CIFAR data.
+
+    Arguments:
+        fpath: path the file to parse.
+        label_key: key for label data in the retrieve
+            dictionary.
+
+    Returns:
+        A tuple `(data, labels)`.
+    """
+    with open(fpath, 'rb') as f:
+        if sys.version_info < (3,):
+            d = cPickle.load(f)
+        else:
+            d = cPickle.load(f, encoding='bytes')
+            # decode utf8
+            d_decoded = {}
+            for k, v in d.items():
+                d_decoded[k.decode('utf8')] = v
+            d = d_decoded
+    data = d['data']
+    labels = d[label_key]
+
+    data = data.reshape(data.shape[0], 3, 32, 32)
+    return data, labels    
+
+def load_cifar10():
+    dirname = 'cifar-10-batches-py'
+    origin = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
+    path = get_file(
+        dirname,
+        origin=origin,
+        untar=True,
+        file_hash=
+        '6d958be074577803d12ecdefd02955f39262c83c16fe9348329d7fe0b5c001ce')
+
+    num_train_samples = 50000
+
+    x_train = np.empty((num_train_samples, 3, 32, 32), dtype='uint8')
+    y_train = np.empty((num_train_samples,), dtype='uint8')
+
+    for i in range(1, 6):
+        fpath = os.path.join(path, 'data_batch_' + str(i))
+        (x_train[(i - 1) * 10000:i * 10000, :, :, :],
+        y_train[(i - 1) * 10000:i * 10000]) = load_batch(fpath)
+
+    fpath = os.path.join(path, 'test_batch')
+    x_test, y_test = load_batch(fpath)
+
+    y_train = np.reshape(y_train, (len(y_train), 1))
+    y_test = np.reshape(y_test, (len(y_test), 1))
+
+    x_test = x_test.astype(x_train.dtype)
+    y_test = y_test.astype(y_train.dtype)
+
+    return (x_train, y_train), (x_test, y_test)
+
