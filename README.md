@@ -1,5 +1,5 @@
 # python-deep-learning
-Python tutorial and deep learning fundamental
+Python tutorial and deep learning fundamental(Chinese)
 
 ## Chapter01. Introduction and installation
 ## Chapter02. Basic grammar and variables
@@ -17,3 +17,4 @@ Python tutorial and deep learning fundamental
 ## Chapter14. Deep convolutional models
 ## Chapter15. Object detection
 ## Chapter16. Semantic segmentation
+## Chapter17. Generative adversarial networks
